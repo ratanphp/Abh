@@ -1,0 +1,87 @@
+<?php
+
+function dockmodal_init() {
+ $url = $GLOBALS['base_url'];
+ $baseURL =  $GLOBALS['base_path'];
+ drupal_add_js(array('dockmodal' => array('basePath' => $url, 'baseUrl' => $baseURL)), 'setting');
+}
+
+
+/**
+ * Implements hook_preprocess_html()
+ */
+function dockmodal_preprocess_html(&$vars) {
+  if(arg(0) != 'admin') {  
+    drupal_add_js('jQuery(document).ready(function () { document.createElement("section");var duration = "500", easing = "swing"; });', array('type' => 'inline', 'scope' => 'header', 'weight' => 0) );
+    drupal_add_css(drupal_get_path('module', 'dockmodal') . '/js/google-code-prettify/prettify.css', array('group' => CSS_THEME, 'type' => 'file', 'media' => 'screen', 'preprocess' => FALSE, 'weight' => '9998'));
+    drupal_add_css(drupal_get_path('module', 'dockmodal') . '/css/jquery.dockmodal.css', array('group' => CSS_THEME, 'type' => 'file', 'preprocess' => FALSE, 'weight' => '9999'));
+    drupal_add_js(drupal_get_path('module', 'dockmodal') . '/js/google-code-prettify/prettify.js', array('type' => 'file', 'scope' => 'footer', 'weight' => 50));
+    drupal_add_js(drupal_get_path('module', 'dockmodal') . '/js/jquery-1.9.1.min.js', array('type' => 'file', 'scope' => 'footer', 'weight' => 51));
+    drupal_add_js(drupal_get_path('module', 'dockmodal') . '/js/jquery-migrate-1.1.1.min.js', array('type' => 'file', 'scope' => 'footer', 'weight' => 52));
+    drupal_add_js(drupal_get_path('module', 'dockmodal') . '/js/jquery.scrollTo.js', array('type' => 'file', 'scope' => 'footer', 'weight' => 53));  
+    drupal_add_js(drupal_get_path('module', 'dockmodal') . '/js/jquery.easing.js', array('type' => 'file', 'scope' => 'footer', 'weight' => 54));
+    drupal_add_js(drupal_get_path('module', 'dockmodal') . '/js/jquery.dockmodal.js', array('type' => 'file', 'scope' => 'footer', 'weight' => 54));
+    if (dockmodal_active_page()) {
+      $vars['classes_array'][] = 'dockmodal-content-only';
+    }
+  }
+
+}
+
+function dockmodal_active_page() {
+	if (isset($_GET['popup']) && $_GET['popup'] == 'docked' ) { 
+		return TRUE;
+	}
+	return FALSE;
+}
+
+
+/**
+ * Implements hook_process_page().
+ */
+
+function dockmodal_process_page(&$vars) {
+  if (dockmodal_active_page()) { 
+    // Suppress admin menu if it's enabled
+    if (module_exists('admin_menu')) {
+      admin_menu_suppress(TRUE);
+    }
+
+    // Clear the breadcrumbs...
+    $vars['breadcrumb'] = '';
+    $vars['theme_hook_suggestions'][] = 'page_dockmodal_render';
+  }
+}
+
+/**
+ * Implements hook_page_alter().
+ */
+
+function dockmodal_page_alter(&$page) {
+  if (dockmodal_active_page()) {
+    // Remove all the elements
+    foreach (element_children($page) as $child) {
+      $page[$child] = array();
+    }
+
+    // Set the content up as markup, rendering using our template
+    $page['content'] = drupal_set_page_content();
+
+    // Force the #theme to be 'page' to stop things like panels getting in the way
+    $page['#theme'] = 'page';
+  }
+}
+
+/**
+ * Implements hook_theme().
+ */
+
+function dockmodal_theme() {
+  return array(
+    'page_dockmodal_render' => array(
+      'variables' => array('content' => NULL),
+      'template' => 'page-dockmodal-render',
+    ),
+  );
+}
+
